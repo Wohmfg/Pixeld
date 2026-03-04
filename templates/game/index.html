@@ -1,0 +1,96 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}PixelGuess — {{ puzzle_date }}{% endblock %}
+
+{% block extra_head %}
+  <meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block content %}
+  {# Hidden date anchor read by game.js #}
+  <div id="puzzle-date" data-date="{{ puzzle_date }}" hidden></div>
+
+  {# Image display #}
+  <section class="image-section">
+    <div class="image-box">
+      {% if level1_url %}
+        <img id="puzzle-image" src="{{ level1_url }}" alt="Pixelated puzzle image">
+      {% else %}
+        <div id="puzzle-image" class="image-placeholder">No image available</div>
+      {% endif %}
+    </div>
+    <p class="category-label">Category: <strong>{{ category }}</strong></p>
+  </section>
+
+  {# Guess form #}
+  <section class="guess-section">
+    <div class="guess-form">
+      <input
+        id="guess-input"
+        type="text"
+        placeholder="Enter your guess…"
+        autocomplete="off"
+        autocapitalize="none"
+        maxlength="200"
+      >
+      <button id="submit-btn" type="button">Guess</button>
+    </div>
+    <p class="attempts-label"><span id="attempts-remaining">6</span> guesses remaining</p>
+    <p id="guess-error" class="guess-error" hidden></p>
+    <p id="guess-suggestion" class="guess-suggestion" hidden></p>
+  </section>
+
+  {# Hint (hidden until 3 wrong guesses) #}
+  <p id="hint" class="hint" hidden></p>
+
+  {# Guess history #}
+  <section class="history-section">
+    <ol id="guess-history" class="guess-history"></ol>
+  </section>
+
+  {# Game-over modal #}
+  <div id="game-over-modal" class="modal-backdrop" hidden>
+    <div class="modal">
+      <p id="modal-result" class="modal-result"></p>
+      <p class="modal-answer-label">The answer was:</p>
+      <p id="modal-answer" class="modal-answer"></p>
+      <p id="modal-guesses" class="modal-guesses"></p>
+
+      <div id="modal-stats" class="modal-stats">
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span id="stat-played" class="stat-value">0</span>
+            <span class="stat-label">Played</span>
+          </div>
+          <div class="stat-item">
+            <span id="stat-won" class="stat-value">0</span>
+            <span class="stat-label">Won</span>
+          </div>
+          <div class="stat-item">
+            <span id="stat-streak" class="stat-value">0</span>
+            <span class="stat-label">Streak</span>
+          </div>
+          <div class="stat-item">
+            <span id="stat-max-streak" class="stat-value">0</span>
+            <span class="stat-label">Best</span>
+          </div>
+        </div>
+
+        <div id="stat-distribution" class="distribution">
+          <p class="distribution-label">Guess distribution</p>
+          <div id="distribution-bars" class="distribution-bars">
+            {# Filled by JS #}
+          </div>
+        </div>
+      </div>
+
+      <button id="share-btn" type="button">Share result</button>
+    </div>
+  </div>
+
+  {# Copy toast #}
+  <div id="toast" class="toast" hidden>Copied!</div>
+
+  <script src="{% static 'js/game.js' %}"></script>
+{% endblock %}

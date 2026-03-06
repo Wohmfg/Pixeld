@@ -120,8 +120,42 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Cloudflare R2 media storage
+# Set all four R2_* env vars to activate; falls back to local filesystem in dev.
+R2_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID')
+R2_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID')
+R2_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY')
+R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME')
+# Optional: set to a custom domain or the R2 public bucket URL for direct object URLs.
+# e.g. "pub-<hash>.r2.dev" or "media.yourdomain.com"
+R2_CUSTOM_DOMAIN = os.environ.get('R2_CUSTOM_DOMAIN')
+
+_r2_configured = all([R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME])
+
+if _r2_configured:
+    AWS_ACCESS_KEY_ID = R2_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY = R2_SECRET_ACCESS_KEY
+    AWS_STORAGE_BUCKET_NAME = R2_BUCKET_NAME
+    AWS_S3_ENDPOINT_URL = f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
+    AWS_S3_REGION_NAME = 'auto'
+    AWS_DEFAULT_ACL = None          # R2 does not support ACLs
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_QUERYSTRING_AUTH = False    # serve files via public URL, not signed URLs
+    if R2_CUSTOM_DOMAIN:
+        AWS_S3_CUSTOM_DOMAIN = R2_CUSTOM_DOMAIN
+        MEDIA_URL = f'https://{R2_CUSTOM_DOMAIN}/'
+    else:
+        MEDIA_URL = f'https://{R2_BUCKET_NAME}.{R2_ACCOUNT_ID}.r2.cloudflarestorage.com/'
+
 STORAGES = {
-    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'default': {
+        'BACKEND': (
+            'storages.backends.s3boto3.S3Boto3Storage'
+            if _r2_configured
+            else 'django.core.files.storage.FileSystemStorage'
+        ),
+    },
     'staticfiles': {
         'BACKEND': (
             'whitenoise.storage.CompressedManifestStaticFilesStorage'
@@ -131,5 +165,6 @@ STORAGES = {
     },
 }
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+if not _r2_configured:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'

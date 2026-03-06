@@ -21,7 +21,9 @@ def generate_pixel_levels(puzzle):
     """Generate 6 pixelation levels for a Puzzle. Called on every save."""
     from .models import PuzzleImage
 
-    with Image.open(puzzle.image.path) as img:
+    with puzzle.image.open('rb') as f:
+        image_data = f.read()
+    with Image.open(io.BytesIO(image_data)) as img:
         img = img.convert('RGB')
         w, h = img.size
 

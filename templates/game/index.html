@@ -21,6 +21,9 @@
       {% endif %}
     </div>
     <p class="category-label">Category: <strong>{{ category }}</strong></p>
+    <div id="try-previous" hidden>
+      <a id="try-previous-link" href="#" class="try-previous-link">Try previous puzzle!</a>
+    </div>
   </section>
 
   {# Guess form #}
@@ -96,6 +99,9 @@
 
   {# Copy toast #}
   <div id="toast" class="toast" hidden>Copied!</div>
+
+  {# Stats tab — appears at bottom after game over #}
+  <button id="stats-tab" class="stats-tab" hidden>Show stats ↑</button>
 
   <script src="{% static 'js/game.js' %}"></script>
 {% endblock %}

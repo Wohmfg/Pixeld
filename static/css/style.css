@@ -514,6 +514,44 @@ main {
   }
 }
 
+/* ─── Stats tab ─────────────────────────────────────────────────────────────── */
+.stats-tab {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--navy);
+  color: #fff;
+  border: none;
+  border-radius: 2rem;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.stats-tab:hover {
+  background: var(--navy-mid);
+}
+
+/* ─── Try previous link ──────────────────────────────────────────────────────── */
+#try-previous {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.try-previous-link {
+  display: inline-block;
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* ─── Archive links ─────────────────────────────────────────────────────────── */
 #archive-links {
   margin-top: 1rem;

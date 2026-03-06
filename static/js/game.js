@@ -144,7 +144,7 @@ function showGameOverModal(won, answerDisplay, stats) {
     bars.appendChild(row);
   });
 
-  // Archive links (only for today's puzzle)
+  // Archive links inside modal + try-previous link under image (today's puzzle only)
   if (!isArchive && archiveDates.length > 0) {
     const labels = ['Yesterday\'s puzzle', 'Puzzle from 2 days ago'];
     const linkList = document.getElementById('archive-link-list');
@@ -157,9 +157,17 @@ function showGameOverModal(won, answerDisplay, stats) {
       linkList.appendChild(a);
     });
     document.getElementById('archive-links').hidden = false;
+
+    // Prominent link under the image
+    const tryLink = document.getElementById('try-previous-link');
+    if (tryLink) {
+      tryLink.href = `/puzzle/${archiveDates[0]}/`;
+      document.getElementById('try-previous').hidden = false;
+    }
   }
 
-  document.getElementById('game-over-modal').hidden = false;
+  // Show tab at bottom rather than popping modal straight away
+  document.getElementById('stats-tab').hidden = false;
 }
 
 function generateShareText(state) {
@@ -344,6 +352,12 @@ function init() {
   // Share button always available (including on restored game-over)
   document.getElementById('share-btn').addEventListener('click', () => {
     generateShareText(loadState());
+  });
+
+  // Stats tab — tap to reveal modal
+  document.getElementById('stats-tab').addEventListener('click', () => {
+    document.getElementById('stats-tab').hidden = true;
+    document.getElementById('game-over-modal').hidden = false;
   });
 
   // Restore guess history

@@ -7,8 +7,11 @@
  */
 
 const STATS_KEY = 'pixelguess_stats';
-const todayStr = document.getElementById('puzzle-date')?.dataset.date;
+const _puzzleDateEl = document.getElementById('puzzle-date');
+const todayStr = _puzzleDateEl?.dataset.date;
 const STATE_KEY = `pixelguess_state_${todayStr}`;
+const isArchive = _puzzleDateEl?.dataset.archive === 'true';
+const archiveDates = (_puzzleDateEl?.dataset.archiveDates || '').split(',').filter(Boolean);
 
 // ─── Stats helpers ────────────────────────────────────────────────────────────
 
@@ -141,6 +144,21 @@ function showGameOverModal(won, answerDisplay, stats) {
     bars.appendChild(row);
   });
 
+  // Archive links (only for today's puzzle)
+  if (!isArchive && archiveDates.length > 0) {
+    const labels = ['Yesterday\'s puzzle', 'Puzzle from 2 days ago'];
+    const linkList = document.getElementById('archive-link-list');
+    linkList.innerHTML = '';
+    archiveDates.forEach((d, i) => {
+      const a = document.createElement('a');
+      a.href = `/puzzle/${d}/`;
+      a.textContent = labels[i] || d;
+      a.className = 'archive-link';
+      linkList.appendChild(a);
+    });
+    document.getElementById('archive-links').hidden = false;
+  }
+
   document.getElementById('game-over-modal').hidden = false;
 }
 
@@ -229,7 +247,7 @@ async function submitGuess(guess) {
     state.status = 'won';
     state.answerDisplay = data.answer_display;
     saveState(state);
-    updateStats(true, state.guesses.length);
+    if (!isArchive) updateStats(true, state.guesses.length);
     // Show full-resolution image (level 6)
     try {
       const imgResp = await fetch(`/image/${todayStr}/6/`);
@@ -243,7 +261,13 @@ async function submitGuess(guess) {
     state.status = 'lost';
     state.answerDisplay = data.answer_display;
     saveState(state);
-    updateStats(false, state.guesses.length);
+    if (!isArchive) updateStats(false, state.guesses.length);
+    // Show full-resolution image (level 6)
+    try {
+      const imgResp = await fetch(`/image/${todayStr}/6/`);
+      const imgData = await imgResp.json();
+      if (imgData.image_url) showImage(imgData.image_url);
+    } catch { /* non-fatal */ }
     disableInput();
     showGameOverModal(false, data.answer_display, loadStats());
 
@@ -337,7 +361,7 @@ function init() {
   if (state.status !== 'playing') {
     // Already played today — lock input and show modal
     disableInput();
-    const levelToShow = state.status === 'won' ? 6 : state.currentLevel;
+    const levelToShow = (state.status === 'won' || state.status === 'lost') ? 6 : state.currentLevel;
     fetch(`/image/${todayStr}/${levelToShow}/`)
       .then(r => r.json())
       .then(d => { if (d.image_url) showImage(d.image_url); })

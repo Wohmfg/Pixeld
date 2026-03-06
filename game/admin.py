@@ -30,7 +30,7 @@ class PuzzleAdmin(admin.ModelAdmin):
     readonly_fields = ['thumb']
     fieldsets = [
         (None, {'fields': ['date', 'category']}),
-        ('Answer', {'fields': ['answer', 'answer_display', 'hint']}),
+        ('Answer', {'fields': ['answer', 'answer_display', 'aliases', 'hint']}),
         ('Image', {'fields': ['image', 'thumb']}),
     ]
     inlines = [PuzzleImageInline]

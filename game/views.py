@@ -1,12 +1,26 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.http import require_POST
 
 from .models import Puzzle, PuzzleImage
 from .utils import is_close_match
+
+
+def _puzzle_context(puzzle, puzzle_date_str, is_archive, archive_dates):
+    try:
+        level1_url = puzzle.levels.get(level=1).image.url
+    except PuzzleImage.DoesNotExist:
+        level1_url = None
+    return {
+        'puzzle_date': puzzle_date_str,
+        'level1_url': level1_url,
+        'category': puzzle.category,
+        'is_archive': is_archive,
+        'archive_dates': archive_dates,
+    }
 
 
 def index(request):
@@ -16,17 +30,27 @@ def index(request):
     except Puzzle.DoesNotExist:
         return render(request, 'game/no_puzzle.html', status=200)
 
-    try:
-        level1 = puzzle.levels.get(level=1)
-        level1_url = level1.image.url
-    except PuzzleImage.DoesNotExist:
-        level1_url = None
+    archive_dates = []
+    for delta in (1, 2):
+        d = today - timedelta(days=delta)
+        if Puzzle.objects.filter(date=d).exists():
+            archive_dates.append(d.isoformat())
 
-    return render(request, 'game/index.html', {
-        'puzzle_date': today.isoformat(),
-        'level1_url': level1_url,
-        'category': puzzle.category,
-    })
+    return render(request, 'game/index.html',
+                  _puzzle_context(puzzle, today.isoformat(), False, archive_dates))
+
+
+def past_puzzle(request, date_str):
+    today = date.today()
+    try:
+        puzzle_date = date.fromisoformat(date_str)
+    except ValueError:
+        raise Http404
+    if puzzle_date >= today:
+        raise Http404
+    puzzle = get_object_or_404(Puzzle, date=puzzle_date)
+    return render(request, 'game/index.html',
+                  _puzzle_context(puzzle, date_str, True, []))
 
 
 def get_image(request, date_str, level):
@@ -56,16 +80,17 @@ def submit_guess(request):
         return JsonResponse({'error': 'Guess cannot be empty'}, status=400)
 
     puzzle = get_object_or_404(Puzzle, date=date_str)
+    all_answers = puzzle.get_all_answers()
 
-    if guess == puzzle.answer:
+    if guess in all_answers:
         return JsonResponse({
             'correct': True,
             'game_over': True,
             'answer_display': puzzle.answer_display,
         })
 
-    # Fuzzy match — don't consume the attempt
-    if is_close_match(guess, puzzle.answer):
+    # Fuzzy match against all accepted answers — don't consume the attempt
+    if any(is_close_match(guess, a) for a in all_answers):
         return JsonResponse({
             'correct': False,
             'game_over': False,

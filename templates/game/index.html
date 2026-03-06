@@ -9,7 +9,7 @@
 
 {% block content %}
   {# Hidden date anchor read by game.js #}
-  <div id="puzzle-date" data-date="{{ puzzle_date }}" hidden></div>
+  <div id="puzzle-date" data-date="{{ puzzle_date }}" data-archive="{{ is_archive|yesno:'true,false' }}" data-archive-dates="{{ archive_dates|join:',' }}" hidden></div>
 
   {# Image display #}
   <section class="image-section">
@@ -86,6 +86,11 @@
       </div>
 
       <button id="share-btn" type="button">Share result</button>
+
+      <div id="archive-links" hidden>
+        <p class="archive-label">Play more puzzles:</p>
+        <div id="archive-link-list"></div>
+      </div>
     </div>
   </div>
 

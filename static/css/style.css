@@ -513,3 +513,31 @@ main {
     font-size: 1.25rem;
   }
 }
+
+/* ─── Archive links ─────────────────────────────────────────────────────────── */
+#archive-links {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.archive-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+#archive-link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.archive-link {
+  display: block;
+  color: var(--navy);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+}

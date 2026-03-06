@@ -275,6 +275,7 @@ main {
 }
 
 .modal {
+  position: relative;
   background: #fff;
   border-radius: 10px;
   box-shadow: var(--shadow-lg);
@@ -512,6 +513,24 @@ main {
   .modal-result {
     font-size: 1.25rem;
   }
+}
+
+/* ─── Modal close button ────────────────────────────────────────────────────── */
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #111;
 }
 
 /* ─── Stats tab ─────────────────────────────────────────────────────────────── */

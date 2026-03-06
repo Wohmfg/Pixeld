@@ -144,15 +144,14 @@ function showGameOverModal(won, answerDisplay, stats) {
     bars.appendChild(row);
   });
 
-  // Archive links inside modal + try-previous link under image (today's puzzle only)
-  if (!isArchive && archiveDates.length > 0) {
-    const labels = ['Yesterday\'s puzzle', 'Puzzle from 2 days ago'];
+  // Archive links inside modal + try-previous link under image
+  if (archiveDates.length > 0) {
     const linkList = document.getElementById('archive-link-list');
     linkList.innerHTML = '';
-    archiveDates.forEach((d, i) => {
+    archiveDates.forEach(d => {
       const a = document.createElement('a');
       a.href = `/puzzle/${d}/`;
-      a.textContent = labels[i] || d;
+      a.textContent = 'Previous puzzle';
       a.className = 'archive-link';
       linkList.appendChild(a);
     });
@@ -164,6 +163,8 @@ function showGameOverModal(won, answerDisplay, stats) {
       tryLink.href = `/puzzle/${archiveDates[0]}/`;
       document.getElementById('try-previous').hidden = false;
     }
+  } else {
+    document.getElementById('archive-links').hidden = true;
   }
 
   // Show tab at bottom rather than popping modal straight away
@@ -358,6 +359,12 @@ function init() {
   document.getElementById('stats-tab').addEventListener('click', () => {
     document.getElementById('stats-tab').hidden = true;
     document.getElementById('game-over-modal').hidden = false;
+  });
+
+  // Modal close button — hide modal, show tab again
+  document.getElementById('modal-close').addEventListener('click', () => {
+    document.getElementById('game-over-modal').hidden = true;
+    document.getElementById('stats-tab').hidden = false;
   });
 
   // Restore guess history

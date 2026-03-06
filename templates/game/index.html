@@ -55,6 +55,7 @@
   {# Game-over modal #}
   <div id="game-over-modal" class="modal-backdrop" hidden>
     <div class="modal">
+      <button id="modal-close" class="modal-close" aria-label="Close">✕</button>
       <p id="modal-result" class="modal-result"></p>
       <p class="modal-answer-label">The answer was:</p>
       <p id="modal-answer" class="modal-answer"></p>
@@ -91,7 +92,7 @@
       <button id="share-btn" type="button">Share result</button>
 
       <div id="archive-links" hidden>
-        <p class="archive-label">Play more puzzles:</p>
+        <p class="archive-label">Keep going:</p>
         <div id="archive-link-list"></div>
       </div>
     </div>

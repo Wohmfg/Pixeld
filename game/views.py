@@ -23,6 +23,11 @@ def _puzzle_context(puzzle, puzzle_date_str, is_archive, archive_dates):
     }
 
 
+def _previous_date(before_date):
+    prev = Puzzle.objects.filter(date__lt=before_date).order_by('-date').first()
+    return [prev.date.isoformat()] if prev else []
+
+
 def index(request):
     today = date.today()
     try:
@@ -30,14 +35,8 @@ def index(request):
     except Puzzle.DoesNotExist:
         return render(request, 'game/no_puzzle.html', status=200)
 
-    archive_dates = []
-    for delta in (1, 2):
-        d = today - timedelta(days=delta)
-        if Puzzle.objects.filter(date=d).exists():
-            archive_dates.append(d.isoformat())
-
     return render(request, 'game/index.html',
-                  _puzzle_context(puzzle, today.isoformat(), False, archive_dates))
+                  _puzzle_context(puzzle, today.isoformat(), False, _previous_date(today)))
 
 
 def past_puzzle(request, date_str):
@@ -50,7 +49,7 @@ def past_puzzle(request, date_str):
         raise Http404
     puzzle = get_object_or_404(Puzzle, date=puzzle_date)
     return render(request, 'game/index.html',
-                  _puzzle_context(puzzle, date_str, True, []))
+                  _puzzle_context(puzzle, date_str, True, _previous_date(puzzle_date)))
 
 
 def get_image(request, date_str, level):

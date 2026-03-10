@@ -11,7 +11,20 @@ const _puzzleDateEl = document.getElementById('puzzle-date');
 const todayStr = _puzzleDateEl?.dataset.date;
 const STATE_KEY = `pixelguess_state_${todayStr}`;
 const isArchive = _puzzleDateEl?.dataset.archive === 'true';
-const archiveDates = (_puzzleDateEl?.dataset.archiveDates || '').split(',').filter(Boolean);
+const prevDate = _puzzleDateEl?.dataset.prevDate || '';
+const nextDate = _puzzleDateEl?.dataset.nextDate || '';
+
+function formatPuzzleDate(dateStr) {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const monthName = new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long' });
+  const n = day;
+  const suffix = (n >= 11 && n <= 13) ? 'th'
+    : n % 10 === 1 ? 'st'
+    : n % 10 === 2 ? 'nd'
+    : n % 10 === 3 ? 'rd' : 'th';
+  return `${monthName} ${n}${suffix}`;
+}
 
 // ─── Stats helpers ────────────────────────────────────────────────────────────
 
@@ -144,28 +157,41 @@ function showGameOverModal(won, answerDisplay, stats) {
     bars.appendChild(row);
   });
 
-  // Archive links inside modal + try-previous link under image
-  if (archiveDates.length > 0) {
-    const linkList = document.getElementById('archive-link-list');
-    linkList.innerHTML = '';
-    archiveDates.forEach(d => {
-      const a = document.createElement('a');
-      a.href = `/puzzle/${d}/`;
-      a.textContent = 'Previous puzzle';
-      a.className = 'archive-link';
-      linkList.appendChild(a);
-    });
-    document.getElementById('archive-links').hidden = false;
+  // Navigation links under image and in modal
+  const linkList = document.getElementById('archive-link-list');
+  linkList.innerHTML = '';
 
-    // Prominent link under the image
-    const tryLink = document.getElementById('try-previous-link');
-    if (tryLink) {
-      tryLink.href = `/puzzle/${archiveDates[0]}/`;
+  if (prevDate) {
+    const tryPrev = document.getElementById('try-previous-link');
+    if (tryPrev) {
+      tryPrev.href = `/puzzle/${prevDate}/`;
+      tryPrev.textContent = `← Try previous puzzle [${formatPuzzleDate(prevDate)}]`;
       document.getElementById('try-previous').hidden = false;
     }
-  } else {
-    document.getElementById('archive-links').hidden = true;
+    const a = document.createElement('a');
+    a.href = `/puzzle/${prevDate}/`;
+    a.textContent = `← Previous puzzle [${formatPuzzleDate(prevDate)}]`;
+    a.className = 'archive-link';
+    linkList.appendChild(a);
   }
+
+  if (nextDate) {
+    const clientToday = new Date().toLocaleDateString('en-CA');
+    const nextHref = (nextDate === clientToday) ? '/' : `/puzzle/${nextDate}/`;
+    const tryNext = document.getElementById('try-next-link');
+    if (tryNext) {
+      tryNext.href = nextHref;
+      tryNext.textContent = `Go to next puzzle [${formatPuzzleDate(nextDate)}] →`;
+      document.getElementById('try-next').hidden = false;
+    }
+    const a = document.createElement('a');
+    a.href = nextHref;
+    a.textContent = `Next puzzle [${formatPuzzleDate(nextDate)}] →`;
+    a.className = 'archive-link';
+    linkList.appendChild(a);
+  }
+
+  document.getElementById('archive-links').hidden = (linkList.children.length === 0);
 
   // Show tab at bottom rather than popping modal straight away
   document.getElementById('stats-tab').hidden = false;

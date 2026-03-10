@@ -9,7 +9,7 @@ from .models import Puzzle, PuzzleImage
 from .utils import is_close_match
 
 
-def _puzzle_context(puzzle, puzzle_date_str, is_archive, archive_dates):
+def _puzzle_context(puzzle, puzzle_date_str, is_archive, prev_date, next_date):
     try:
         level1_url = puzzle.levels.get(level=1).image.url
     except PuzzleImage.DoesNotExist:
@@ -19,13 +19,20 @@ def _puzzle_context(puzzle, puzzle_date_str, is_archive, archive_dates):
         'level1_url': level1_url,
         'category': puzzle.category,
         'is_archive': is_archive,
-        'archive_dates': archive_dates,
+        'prev_date': prev_date or '',
+        'next_date': next_date or '',
     }
 
 
-def _previous_date(before_date):
+def _prev_date(before_date):
     prev = Puzzle.objects.filter(date__lt=before_date).order_by('-date').first()
-    return [prev.date.isoformat()] if prev else []
+    return prev.date.isoformat() if prev else ''
+
+
+def _next_date(after_date):
+    today = date.today()
+    nxt = Puzzle.objects.filter(date__gt=after_date, date__lte=today).order_by('date').first()
+    return nxt.date.isoformat() if nxt else ''
 
 
 def index(request):
@@ -36,7 +43,7 @@ def index(request):
         return render(request, 'game/no_puzzle.html', status=200)
 
     return render(request, 'game/index.html',
-                  _puzzle_context(puzzle, today.isoformat(), False, _previous_date(today)))
+                  _puzzle_context(puzzle, today.isoformat(), False, _prev_date(today), ''))
 
 
 def past_puzzle(request, date_str):
@@ -49,7 +56,7 @@ def past_puzzle(request, date_str):
         raise Http404
     puzzle = get_object_or_404(Puzzle, date=puzzle_date)
     return render(request, 'game/index.html',
-                  _puzzle_context(puzzle, date_str, True, _previous_date(puzzle_date)))
+                  _puzzle_context(puzzle, date_str, True, _prev_date(puzzle_date), _next_date(puzzle_date)))
 
 
 def get_image(request, date_str, level):
@@ -82,6 +89,7 @@ def submit_guess(request):
     all_answers = puzzle.get_all_answers()
 
     if guess in all_answers:
+        puzzle.record_guess_result(won=True, guess_number=current_level)
         return JsonResponse({
             'correct': True,
             'game_over': True,
@@ -98,6 +106,7 @@ def submit_guess(request):
 
     # Wrong guess
     if current_level >= 6:
+        puzzle.record_guess_result(won=False)
         return JsonResponse({
             'correct': False,
             'game_over': True,

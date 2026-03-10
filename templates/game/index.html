@@ -9,7 +9,7 @@
 
 {% block content %}
   {# Hidden date anchor read by game.js #}
-  <div id="puzzle-date" data-date="{{ puzzle_date }}" data-archive="{{ is_archive|yesno:'true,false' }}" data-archive-dates="{{ archive_dates|join:',' }}" hidden></div>
+  <div id="puzzle-date" data-date="{{ puzzle_date }}" data-archive="{{ is_archive|yesno:'true,false' }}" data-prev-date="{{ prev_date }}" data-next-date="{{ next_date }}" hidden></div>
 
   {# Image display #}
   <section class="image-section">
@@ -22,7 +22,10 @@
     </div>
     <p class="category-label">Category: <strong>{{ category }}</strong></p>
     <div id="try-previous" hidden>
-      <a id="try-previous-link" href="#" class="try-previous-link">Try previous puzzle!</a>
+      <a id="try-previous-link" href="#" class="try-previous-link"></a>
+    </div>
+    <div id="try-next" hidden>
+      <a id="try-next-link" href="#" class="try-previous-link"></a>
     </div>
   </section>
 

@@ -46,6 +46,7 @@ body {
   width: auto;
   vertical-align: -0.07em;
   shape-rendering: crispEdges;
+  margin-right: 0.08em;
 }
 
 /* ─── Header ────────────────────────────────────────────────────────────────── */

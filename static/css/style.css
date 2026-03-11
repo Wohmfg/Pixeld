@@ -42,9 +42,9 @@ body {
 /* ─── Logo pixel-I ──────────────────────────────────────────────────────────── */
 .logo-i {
   display: inline-block;
-  height: 1em;
+  height: 0.72em;
   width: auto;
-  vertical-align: -0.12em;
+  vertical-align: baseline;
   shape-rendering: crispEdges;
   margin-right: 0.08em;
 }

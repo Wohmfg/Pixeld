@@ -43,7 +43,7 @@ body {
 .logo-i {
   display: inline-block;
   height: 0.78em;
-  width: 0.34em;
+  width: auto;
   vertical-align: -0.07em;
   shape-rendering: crispEdges;
 }

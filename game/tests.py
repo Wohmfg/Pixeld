@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 from unittest.mock import patch, MagicMock
 from pathlib import Path
@@ -12,11 +12,16 @@ from django.urls import reverse
 from .models import Puzzle, PuzzleImage
 
 
+def utc_today():
+    """The server's notion of 'today' when no tz cookie is sent."""
+    return datetime.now(timezone.utc).date()
+
+
 def make_puzzle(answer='eiffel tower', answer_display='Eiffel Tower',
                 category='place', puzzle_date=None, hint='A famous landmark'):
     """Create a Puzzle without triggering Pillow image generation."""
     if puzzle_date is None:
-        puzzle_date = date.today()
+        puzzle_date = utc_today()
     with patch('game.utils.generate_pixel_levels'):
         puzzle = Puzzle.objects.create(
             date=puzzle_date,
@@ -52,7 +57,7 @@ class GetImageViewTests(TestCase):
             puzzle=self.puzzle, level=1,
             image='puzzles/processed/test_level1.jpg',
         )
-        self.date_str = date.today().isoformat()
+        self.date_str = utc_today().isoformat()
 
     def test_returns_image_url(self):
         url = reverse('get_image', args=[self.date_str, 1])
@@ -74,7 +79,7 @@ class GetImageViewTests(TestCase):
 class SubmitGuessViewTests(TestCase):
     def setUp(self):
         self.puzzle = make_puzzle(answer='eiffel tower')
-        self.date_str = date.today().isoformat()
+        self.date_str = utc_today().isoformat()
 
     def post_guess(self, guess, level=1, date_str=None):
         return self.client.post(
@@ -168,7 +173,7 @@ class SubmitGuessViewTests(TestCase):
 class FuzzyGuessTests(TestCase):
     def setUp(self):
         self.puzzle = make_puzzle(answer='banana', answer_display='Banana', hint='')
-        self.date_str = date.today().isoformat()
+        self.date_str = utc_today().isoformat()
 
     def post_guess(self, guess, level=1):
         return self.client.post(
@@ -213,6 +218,70 @@ class FuzzyGuessTests(TestCase):
         data = json.loads(self.post_guess('xyz', level=1).content)
         self.assertNotIn('did_you_mean', data)
         self.assertEqual(data['level'], 2)
+
+
+# ─── Player timezone ──────────────────────────────────────────────────────────
+
+class PlayerTimezoneTests(TestCase):
+    # 2026-03-05 23:30 UTC: already March 6th in Tokyo, still March 5th in New York
+    NOW = datetime(2026, 3, 5, 23, 30, tzinfo=timezone.utc)
+
+    def setUp(self):
+        make_puzzle(answer='eiffel tower', puzzle_date=date(2026, 3, 5))
+        make_puzzle(answer='big ben', answer_display='Big Ben', puzzle_date=date(2026, 3, 6))
+        patcher = patch('game.utils.datetime', wraps=datetime)
+        mock_dt = patcher.start()
+        mock_dt.now.side_effect = lambda tz=None: self.NOW.astimezone(tz)
+        self.addCleanup(patcher.stop)
+
+    def get_index(self, tz=None):
+        if tz:
+            self.client.cookies['tz'] = tz
+        return self.client.get(reverse('index'))
+
+    def test_no_cookie_uses_utc(self):
+        self.assertEqual(self.get_index().context['puzzle_date'], '2026-03-05')
+
+    def test_timezone_ahead_of_utc_gets_next_puzzle(self):
+        self.assertEqual(self.get_index('Asia/Tokyo').context['puzzle_date'], '2026-03-06')
+
+    def test_timezone_behind_utc_gets_current_puzzle(self):
+        self.assertEqual(self.get_index('America/New_York').context['puzzle_date'], '2026-03-05')
+
+    def test_invalid_timezone_falls_back_to_utc(self):
+        self.assertEqual(self.get_index('Not/AZone').context['puzzle_date'], '2026-03-05')
+        self.assertEqual(self.get_index('../../etc/passwd').context['puzzle_date'], '2026-03-05')
+
+    def test_unreleased_puzzle_image_is_404(self):
+        url = reverse('get_image', args=['2026-03-06', 1])
+        self.client.cookies['tz'] = 'America/New_York'
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_unreleased_puzzle_guess_is_404(self):
+        self.client.cookies['tz'] = 'America/New_York'
+        response = self.client.post(
+            reverse('submit_guess'),
+            data=json.dumps({'guess': 'big ben', 'date': '2026-03-06', 'current_level': 1}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_released_puzzle_guess_ok_in_timezone_ahead(self):
+        self.client.cookies['tz'] = 'Asia/Tokyo'
+        response = self.client.post(
+            reverse('submit_guess'),
+            data=json.dumps({'guess': 'big ben', 'date': '2026-03-06', 'current_level': 1}),
+            content_type='application/json',
+        )
+        self.assertTrue(json.loads(response.content)['correct'])
+
+    def test_past_puzzle_is_todays_puzzle_404(self):
+        # For Tokyo, March 6th is today, so it's served at / rather than the archive
+        self.client.cookies['tz'] = 'Asia/Tokyo'
+        response = self.client.get(reverse('past_puzzle', args=['2026-03-06']))
+        self.assertEqual(response.status_code, 404)
+        response = self.client.get(reverse('past_puzzle', args=['2026-03-05']))
+        self.assertEqual(response.context['next_date'], '2026-03-06')
 
 
 # ─── Management command ───────────────────────────────────────────────────────

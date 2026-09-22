@@ -438,4 +438,28 @@ function init() {
   });
 }
 
+// ─── Midnight rollover ────────────────────────────────────────────────────────
+
+// If the tab stays open past local midnight, reload to pick up the new day's puzzle.
+// Compares against the local day at page load (not the server date) so it can never loop.
+function watchForNewDay() {
+  if (isArchive) return;
+  const localDay = () => new Date().toLocaleDateString('en-CA');
+  const loadedDay = localDay();
+  const check = () => {
+    if (localDay() !== loadedDay) location.replace('/');
+  };
+  // While watching, don't interrupt a game in progress — let them finish yesterday's
+  setInterval(() => {
+    const state = loadState();
+    if (state.status === 'playing' && state.guesses.length > 0) return;
+    check();
+  }, 60 * 1000);
+  // Coming back to the tab (e.g. next morning) always moves on to the new day
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') check();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', watchForNewDay);

@@ -1,5 +1,8 @@
 import difflib
 import io
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from PIL import Image
 from django.core.files.base import ContentFile
 
@@ -7,6 +10,21 @@ from django.core.files.base import ContentFile
 PIXEL_FACTORS = {1: 64, 2: 32, 3: 16, 4: 8, 5: 3, 6: 1}
 
 FUZZY_THRESHOLD = 0.75
+
+TZ_COOKIE = 'tz'
+
+
+def player_today(request):
+    """Return today's date in the player's timezone (from the `tz` cookie, set by
+    the browser). Falls back to UTC if the cookie is missing or invalid."""
+    tz = timezone.utc
+    tz_name = request.COOKIES.get(TZ_COOKIE, '')
+    if tz_name:
+        try:
+            tz = ZoneInfo(tz_name)
+        except (ZoneInfoNotFoundError, ValueError):
+            pass
+    return datetime.now(tz).date()
 
 
 def is_close_match(guess, answer):

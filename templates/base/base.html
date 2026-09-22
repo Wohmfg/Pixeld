@@ -5,6 +5,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Pixle{% endblock %}</title>
+  <script>
+    // Tell the server the browser's timezone so "today's puzzle" flips at local midnight.
+    // If the cookie was missing or stale, reload once so this page uses the right day.
+    (function () {
+      try {
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (!tz) return;
+        var match = document.cookie.match(/(?:^|; )tz=([^;]*)/);
+        if (match && match[1] === tz) return;
+        document.cookie = 'tz=' + tz + '; path=/; max-age=31536000; SameSite=Lax';
+        // Only reload if the cookie actually stuck (avoids a loop when cookies are blocked)
+        if (document.cookie.indexOf('tz=' + tz) !== -1) location.reload();
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   {% block extra_head %}{% endblock %}
 </head>

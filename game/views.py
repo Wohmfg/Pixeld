@@ -1,12 +1,12 @@
 import json
-from datetime import date, timedelta
+from datetime import date
 
 from django.http import Http404, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.http import require_POST
 
 from .models import Puzzle, PuzzleImage
-from .utils import is_close_match
+from .utils import is_close_match, player_today
 
 
 def _puzzle_context(puzzle, puzzle_date_str, is_archive, prev_date, next_date):
@@ -29,14 +29,13 @@ def _prev_date(before_date):
     return prev.date.isoformat() if prev else ''
 
 
-def _next_date(after_date):
-    today = date.today()
+def _next_date(after_date, today):
     nxt = Puzzle.objects.filter(date__gt=after_date, date__lte=today).order_by('date').first()
     return nxt.date.isoformat() if nxt else ''
 
 
 def index(request):
-    today = date.today()
+    today = player_today(request)
     try:
         puzzle = Puzzle.objects.get(date=today)
     except Puzzle.DoesNotExist:
@@ -47,7 +46,7 @@ def index(request):
 
 
 def past_puzzle(request, date_str):
-    today = date.today()
+    today = player_today(request)
     try:
         puzzle_date = date.fromisoformat(date_str)
     except ValueError:
@@ -56,11 +55,22 @@ def past_puzzle(request, date_str):
         raise Http404
     puzzle = get_object_or_404(Puzzle, date=puzzle_date)
     return render(request, 'game/index.html',
-                  _puzzle_context(puzzle, date_str, True, _prev_date(puzzle_date), _next_date(puzzle_date)))
+                  _puzzle_context(puzzle, date_str, True, _prev_date(puzzle_date), _next_date(puzzle_date, today)))
+
+
+def _released_puzzle(request, date_str):
+    """Fetch a puzzle, 404ing if it hasn't been released yet in the player's timezone."""
+    try:
+        puzzle_date = date.fromisoformat(date_str)
+    except (ValueError, TypeError):
+        raise Http404
+    if puzzle_date > player_today(request):
+        raise Http404
+    return get_object_or_404(Puzzle, date=puzzle_date)
 
 
 def get_image(request, date_str, level):
-    puzzle = get_object_or_404(Puzzle, date=date_str)
+    puzzle = _released_puzzle(request, date_str)
     puzzle_image = get_object_or_404(PuzzleImage, puzzle=puzzle, level=level)
     return JsonResponse({'image_url': puzzle_image.image.url})
 
@@ -85,7 +95,7 @@ def submit_guess(request):
     if not guess:
         return JsonResponse({'error': 'Guess cannot be empty'}, status=400)
 
-    puzzle = get_object_or_404(Puzzle, date=date_str)
+    puzzle = _released_puzzle(request, date_str)
     all_answers = puzzle.get_all_answers()
 
     if guess in all_answers:

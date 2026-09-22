@@ -6,7 +6,7 @@ de-pixelated image in up to 6 attempts. Stats (streak, average guesses) stored i
 localStorage. Built with Django. Deployed on Railway at pixle.site.
 
 ## Current State
-All core features complete and deployed. 29 tests passing. GitHub-ready.
+All core features complete and deployed. 37 tests passing. GitHub-ready.
 
 ## Tech Stack
 - **Backend:** Django 6.0.3, Python 3.14
@@ -42,6 +42,10 @@ staticfiles/         ← collectstatic output (excluded from git)
 
 ## Core Rules & Conventions
 - One puzzle per day (keyed by date, e.g. `2026-03-05`)
+- "Today" is the player's local date: an inline script in `base.html` sets a `tz` cookie
+  (IANA name, e.g. `Europe/London`) and reloads once if it was missing/changed.
+  `player_today(request)` in `utils.py` resolves it (falls back to UTC). Puzzles dated after
+  the player's today 404 on every endpoint. game.js reloads when the local day rolls over.
 - 6 pixel levels: level 1 = most pixelated, level 6 = clearest
 - Each wrong guess reveals the next level
 - Correct guess or 6 wrong guesses = game over for the day
@@ -159,13 +163,14 @@ After game over, JS shows links under the puzzle image:
 - Don't pixelate with CSS blur — use real Pillow-processed images
 
 ## Testing
-Run: `python manage.py test game` — 29 tests, all passing.
+Run: `python manage.py test game` — 37 tests, all passing.
 
 Test classes:
 - `IndexViewTests` — index with/without puzzle (2 tests)
 - `GetImageViewTests` — image URL endpoint (3 tests)
 - `SubmitGuessViewTests` — correct/wrong/edge cases (14 tests)
 - `FuzzyGuessTests` — typo detection, did_you_mean, threshold (6 tests)
+- `PlayerTimezoneTests` — tz cookie → puzzle date, unreleased puzzles 404 (8 tests)
 - `CreatePuzzleCommandTests` — management command (4 tests)
 
 Testing pattern: use `patch('game.utils.generate_pixel_levels')` in `make_puzzle()` to skip Pillow during tests.
